@@ -1,0 +1,110 @@
+---
+title: "Análise da Relação entre Hierarquia (PDI) e Participação em Comentários"
+author: "Renan Carneiro Barbosa de Araújo"
+output: html_document
+theme: sandstone
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(patchwork)
+library(plotly)
+
+# Carregar os dados
+dados <- read_csv("../data/participation-per-country.csv")
+```
+Introdução
+Queremos investigar como a hierarquia nas relações sociais, medida pelo índice PDI (Power Distance Index), se relaciona com a proporção de usuários que comentam em perguntas de outras pessoas (comentaram_prop). Também levamos em conta:
+
+O número de usuários detectados por país (usuarios) como forma de ponderar os dados.
+
+O acesso à internet (%) (Internet), uma variável potencialmente associada à capacidade de participação online.
+
+A localização geográfica dos países (six_regions), para capturar padrões regionais.
+
+Gráfico Principal - Eficaz
+
+```{r}
+ggplot(dados, aes(x = PDI, y = comentaram_prop)) +
+  geom_point(aes(size = usuarios, color = Internet), alpha = 0.8) +
+  scale_color_gradient(low = "#B3E5FC", high = "#01579B") +
+  scale_size(range = c(2, 10)) +
+  geom_smooth(method = "lm", se = FALSE, color = "gray40", linetype = "dashed") +
+  labs(
+    title = "Comentário em questões alheias vs. Hierarquia (PDI)",
+    x = "Índice de Distância ao Poder (PDI)",
+    y = "Proporção de Comentários (comentaram_prop)",
+    color = "Acesso à Internet (%)",
+    size = "Usuários (amostra)"
+  ) +
+  theme_minimal()
+```
+Justificativa
+Esse gráfico usa posição (x, y) para comparar diretamente PDI e comentaram_prop, o que é ideal para identificar padrões. O tamanho dos pontos comunica a importância relativa de cada país com base no número de usuários, enquanto a cor em gradiente representa o acesso à internet, sem sobrecarregar com categorias. A linha de tendência ajuda a identificar a correlação geral. O uso de todos os países em um mesmo painel facilita comparações globais.
+
+Gráficos Menos Eficazes
+1. Eixos Invertidos
+```{r}
+ggplot(dados, aes(x = comentaram_prop, y = PDI)) +
+  geom_point(aes(size = usuarios, color = Internet), alpha = 0.7) +
+  scale_color_gradient(low = "lightblue", high = "darkblue") +
+  theme_minimal() +
+  labs(title = "1. Eixos invertidos")
+```
+Problema: Inverter os eixos quebra a lógica de causa (PDI) e efeito (comentaram_prop), dificultando a interpretação natural da relação.
+
+2. Sem cor, sem tamanho e sem facetas
+```{r}
+ggplot(dados, aes(x = PDI, y = comentaram_prop)) +
+  geom_point(size = 3, alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "2. Sem cor, tamanho ou facetas")
+```
+Problema: Elimina variáveis importantes como acesso à internet e tamanho da amostra. Reduz o contexto necessário para interpretação informada.
+
+3. Só cor (Internet), sem tamanho
+```{r}
+ggplot(dados, aes(x = PDI, y = comentaram_prop, color = Internet)) +
+  geom_point(alpha = 0.7) +
+  scale_color_gradient(low = "lightblue", high = "darkblue") +
+  theme_minimal() +
+  labs(title = "3. Só cor, sem tamanho")
+```
+Problema: Ignora o tamanho da base de usuários, tratando países com poucos usuários como igualmente importantes aos com muitos.
+
+4. Cores por Continente, sem Internet
+```{r}
+ggplot(dados, aes(x = PDI, y = comentaram_prop, color = six_regions)) +
+  geom_point(aes(size = usuarios), alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "4. Cores categóricas por continente")
+```
+Problema: Usar six_regions como cor mistura regiões diferentes e dificulta comparações regionais. Além disso, exclui o acesso à internet, uma variável relevante.
+
+5. Gráfico 3D Interativo
+```{r}
+plot_ly(
+  data = dados,
+  x = ~PDI, y = ~comentaram_prop, z = ~Internet,
+  type = "scatter3d",
+  mode = "markers",
+  size = ~usuarios,
+  marker = list(color = ~Internet, colorscale = 'Blues', showscale = TRUE)
+)
+```
+Problema: Embora visualmente chamativo, gráficos 3D são difíceis de ler com precisão e não facilitam a comparação entre pontos.
+
+Conclusão
+A melhor forma de representar a relação entre hierarquia social e comentários online é usando um gráfico de dispersão com:
+
+Eixo X: PDI
+
+Eixo Y: comentaram_prop
+
+Tamanho: usuarios
+
+Cor (gradiente): Internet
+
+Esse design facilita a análise, mantendo o foco na pergunta principal e incorporando variáveis contextuais essenciais. As alternativas analisadas mostram como decisões visuais podem dificultar ou distorcer a compreensão.
